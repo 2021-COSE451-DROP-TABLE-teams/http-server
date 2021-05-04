@@ -36,6 +36,45 @@ char *strcasestr(const char *s, const char *find) {
   return ((char *)s);
 }
 
+// from https://github.com/abejfehr/URLDecode/blob/master/urldecode.c
+char *url_decode(const char *str) {
+  int d = 0; /* whether or not the string is decoded */
+
+  char *dStr = malloc(strlen(str) + 1);
+  char eStr[] = "00"; /* for a hex code */
+
+  strcpy(dStr, str);
+
+  while (!d) {
+    d = 1;
+    int i; /* the counter for the string */
+
+    for (i = 0; i < strlen(dStr); ++i) {
+      if (dStr[i] == '%') {
+        if (dStr[i + 1] == 0) return dStr;
+
+        if (isxdigit(dStr[i + 1]) && isxdigit(dStr[i + 2])) {
+          d = 0;
+
+          /* combine the next to numbers into one */
+          eStr[0] = dStr[i + 1];
+          eStr[1] = dStr[i + 2];
+
+          /* convert it to decimal */
+          long int x = strtol(eStr, NULL, 16);
+
+          /* remove the hex */
+          memmove(&dStr[i + 1], &dStr[i + 3], strlen(&dStr[i + 3]) + 1);
+
+          dStr[i] = x;
+        }
+      }
+    }
+  }
+
+  return dStr;
+}
+
 // parse_http_request()
 //   parses http request and store the result in struct http_request
 //   returns 0 if successful, -1 otherwise
@@ -96,7 +135,11 @@ int parse_http_request(int client_fd, char *request, struct http_request *req) {
   while (p = strchr(p, ' '), p) *p++ = '\x00';
 
   req->query_string = strchr(req->request_uri, '?');
-  if (req->query_string) *req->query_string++ = '\x00';
+  if (req->query_string) {
+    *req->query_string++ = '\x00';
+    req->query_string = url_decode(req->query_string);
+    if (!req->query_string) return -1;
+  }
 
   if (p = strstr(req->request_uri, ".cgi"), p) {
     p += 4;  // strlen(".cgi");
