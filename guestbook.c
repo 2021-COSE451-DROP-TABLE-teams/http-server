@@ -54,8 +54,8 @@ int send_tsv() {
 	if (fp == NULL){
 		fprintf(stderr, "File %s does not exist.\n", filename);
 		fp = fopen(filename, "w");
-		fprintf(fp, "%s\t%u\t%d\t%d\t%s\t%s\n",
-					"hash", 0, 0, 0, "username", "message");
+		fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n",
+					0, "hash", 0, 0, "username", "message");
 		return 0;
 	}
 
@@ -66,8 +66,8 @@ int send_tsv() {
 	char author[100];
 	char message[1000];
 
-	while(fscanf(fp, "%s\t%u\t%d\t%d\t%s\t",
-			hash, &unix_time, &post_id, &visible, author) == 5) {
+	while(fscanf(fp, "%u\t%s\t%d\t%d\t%s\t",
+			&unix_time, hash, &post_id, &visible, author) == 5) {
 
 		fgets(message, 1000, fp);
 		if (visible == 0)
@@ -98,27 +98,39 @@ int update_tsv() {
 	char* p_op = strstr(query_string, "operation=");
 	token = strtok(p_op, "=");
 	char* op = strtok(NULL, "&");
-
-	//generate file name and open TSV file
-	char* filename = strcat(board_name, ".tsv");
-	FILE* fp = fopen(filename, "a+");
-	fp = fopen(filename, "a+");
-
-
-	//initialise some message fields
-	unsigned int unix_time = (unsigned) time(NULL);
-	int post_id = get_next_id(board_name);
-	int visible = 1;
-
+	int mode;
+	if (strcmp(op, "create") == 0) {
+		mode = 1;
+	}
+	else if (strcmp(op, "delete") == 0) {
+		mode = 0;
+	}
+	else {
+		fprintf(stderr, "Unrecognised operation.");
+		return 0;
+	}
+	
 	//extract from stdin
 	int content_len = atoi(getenv("CONTENT_LENGTH"));
 	char* buffer = (char*) malloc(content_len * 2);
 	read(0, buffer, content_len);
 	
-	//extract hash, author and message
-	char* p_message = strstr(buffer, "comment=");
-	token = strtok(p_message, "=");
-	char* message = strtok(NULL, "&");
+	//extract relevant fields
+	char* p_message = NULL;
+	char* message = NULL;
+	char* p_id = NULL;
+	char* id = NULL;
+
+	if (mode == 1) {	
+		p_message = strstr(buffer, "comment=");
+		token = strtok(p_message, "=");
+		message = strtok(NULL, "&");
+	}
+	else {
+		p_id = strstr(buffer, "post-id=");
+		token = strtok(p_id, "=");
+		id = strtok(NULL, "&");
+	}
 
 	char* p_hash = strstr(buffer, "password=");
 	token = strtok(p_hash, "=");
@@ -127,29 +139,60 @@ int update_tsv() {
 	char* p_author = strstr(buffer, "name=");
 	token = strtok(p_author, "=");
 	char* author = strtok(NULL, "&");
-
-
-	//append message to file
-	int readlen = fprintf(fp, "%s\t%u\t%d\t%d\t%s\t%s\n",
-							hash, unix_time, post_id, visible, author, message);
 	
-	/*
-	fprintf(fp, "[DEBUG]: read %d chars\n", readlen);
-	fclose(fp);
-	fp = fopen(filename, "a+");
+	//generate file name
+	char* filename = strcat(board_name, ".tsv");
+
+	//perform operation
+	if (mode == 1) {
+		FILE* fp = fopen(filename, "a+");
+
+		//generate the rest of the message fields
+		unsigned int unix_time = (unsigned) time(NULL);
+		int post_id = get_next_id(board_name);
+		int visible = 1;
+
+		//append message to file
+		int readlen = fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n",
+								unix_time, hash, post_id, visible, author, message);
+
+		free(buffer);
+		fclose(fp);
+		return 0;
+	}
+	else {
+		FILE* fp = fopen(filename, "r+");
+		char* bf[100];
+		int line = 0;
+		char* line_ptr;
+
+		while (!feof(fp)) {
+			fgets(bf, sizeof(bf), fp);
+			line_ptr = strstr(bf, hash);
+
+			if (line_ptr != NULL) {
+				char* hash = strtok(line_ptr, "\t");
+				char* post_id = strtok(NULL, "\t");
+				if (strcmp(post_id, id) != 0) {
+					continue;
+				}
+				char* visible = strtok(NULL, "\t");
+				char* username = strtok(NULL, "\t");
+				char* message = strtok(NULL, "\t");
+				
+				//TODO: find the right offset
+				fseek(fp, -sizeof(message) - sizeof(username) - sizeof(visible) + 1, SEEK_CUR);
+				fputc('0', fp);
+				break;
+			}
+			line++;
+		}
+
+		free(buffer);
+		fclose(fp);
+		return 0;
 	
-	while(readlen < content_len) {
-		readlen += fprintf(fp, "%s", message);
-
-		//fprintf(fp, "[DEBUG]: read %d/%d chars\n", readlen, content_len);
-		//fclose(fp);
-		//fp = fopen(filename, "a+");
-	}*/
-
-
-	free(buffer);
-	fclose(fp);
-	return 0;
+	}
 }
 
 int get_next_id(char* filename) {
