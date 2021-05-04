@@ -42,6 +42,12 @@ int parse_http_request(int client_fd, char *request, struct http_request *req) {
   if (p = strstr(p, "\r\n\r\n"), !p) return -1;
   req->body = p + 4;
 
+  // insert NULL bytes between tokens
+  p = req->request;
+  while (p = strstr(p, "\r\n"), p) *p++ = '\x00';
+  p = req->request;
+  while (p = strchr(p, ' '), p) *p++ = '\x00';
+
   return 0;
 }
 
