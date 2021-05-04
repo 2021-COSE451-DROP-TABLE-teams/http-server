@@ -25,6 +25,23 @@
 
 extern const char *kHttpMethods[];
 
+#define NUM_CGI_ENV_VARS 14
+enum CgiEnviromentVars {
+  kGatewayInterface,
+  kScriptName,
+  kPathInfo,
+  kServerName,
+  kServerPort,
+  kServerProtocol,
+  kServerSoftware,
+  kRequestMethod,
+  kQueryString,
+  kRemoteAddr,
+  kContentLength,
+  kContentType,
+  kAuthType,
+};
+
 struct server_config {
   int fd;
   char *root;
