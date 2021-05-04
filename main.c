@@ -85,6 +85,25 @@ int main(int argc, char **argv) {
   if (res = parse_http_request(client_fd, request_buf, &user_request), res < 0)
     goto done;  // TODO: response with error
 
+#if DEBUG
+  fprintf(stderr, "[DEBUG] request: %s\n", user_request.request);
+  fprintf(stderr, "[DEBUG] method: %s\n", user_request.method);
+  fprintf(stderr, "[DEBUG] request_uri: %s\n", user_request.request_uri);
+  if (user_request.query_string)
+    fprintf(stderr, "[DEBUG] query_string: %s\n", user_request.query_string);
+  if (user_request.content_length)
+    fprintf(stderr, "[DEBUG] content_length: %s\n",
+            user_request.content_length);
+  if (user_request.content_type)
+    fprintf(stderr, "[DEBUG] content_type: %s\n", user_request.content_type);
+  if (user_request.path_info)
+    fprintf(stderr, "[DEBUG] path_info: %s\n", user_request.path_info);
+  if (user_request.authorization)
+    fprintf(stderr, "[DEBUG] authorization %s\n", user_request.authorization);
+  fprintf(stderr, "[DEBUG] http_version: %s\n", user_request.http_version);
+  fprintf(stderr, "[DEBUG] body: %s\n", user_request.body);
+#endif
+
   if (res = response_with_data(client_fd, &user_request), res < 0)
     goto done;  // TODO: response with error
 
