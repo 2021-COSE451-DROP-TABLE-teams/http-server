@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Drop Table Guestbook</title>
+
+    <!-- www.w3schools.com -->
+    <style>
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333333;
+        }
+
+        li {
+            float: left;
+        }
+
+        li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 16px;
+            text-decoration: none;
+        }
+
+        li a:hover {
+            background-color: #111111;
+        }
+    </style>
+</head>
+
+
+<body onhashchange="onhashchange()" onload="onload()">
+
+<ul>
+    <li><a href="#Korea University">Korea University</a></li>
+    <li><a href="#Software Security">Software Security</a></li>
+    <li><a href="#My Team">My Team</a></li>
+    <li><a href="#Life">Life</a></li>
+</ul>
+
+<hr>
+<form onSubmit="this.action='guestbook.cgi?board='+String(location.hash).slice(1)+'&operation=create'"
+      action="guestbook.cgi" method=post>
+    <input type=hidden name=fields value="author,password,message">
+    Name: <input type=text name=author><br>
+    Password: <input type=password name=password><br>
+    Comments: <br><textarea name=message rows=5 cols=60>
+</textarea><br>
+    <input type=submit value="Create">
+</form>
+<hr>
+
+<div id="dvTable"></div> <!-- Marks where the board will be displayed -->
+
+<hr>
+<form onSubmit="this.action='guestbook.cgi?board='+String(location.hash).slice(1)+'&operation=delete'"
+      action="guestbook.cgi" method=post>
+    <input type=hidden name=fields value="author,password,post_id">
+    Name: <input type=text name=author><br>
+    Password: <input type=password name=password><br>
+    Post_id to delete: <input type=text name=post_id><br>
+    <input type=submit value="Delete">
+</form>
+<hr>
+
+
+</body>
+</html>
+
+<script type="text/javascript">
+    function tsv_to_array(tsv) {
+        let arr = new Array();
+
+        let columns = ['unix_time', 'post_id', 'author', 'message']
+        arr.push(columns);
+
+        let lines = tsv.split('\n');
+        for (let index = 0; index < lines.length; index++) {
+            let line = lines[index].split('\t');
+            arr.push(line);
+        }
+        return arr
+    }
+</script>
+
+
+<script type="text/javascript">
+    function GenerateTable(arr) {
+        //From: https://www.aspsnippets.com/Articles/Create-dynamic-Table-in-HTML-at-runtime-using-JavaScript.aspx
+
+        //Create a HTML Table
+        let table = document.createElement("TABLE");
+        table.border = "1";
+
+        //Get the count of columns.
+        let columnCount = arr[0].length;
+
+        //Add header
+        let row = table.insertRow(-1);
+        for (let i = 0; i < columnCount; i++) {
+            let headerCell = document.createElement("TH");
+            headerCell.innerHTML = arr[0][i];
+            row.appendChild(headerCell);
+        }
+
+        //Add the data rows.
+        for (let i = 1; i < arr.length; i++) {
+            row = table.insertRow(-1);
+            for (let j = 0; j < columnCount; j++) {
+                let cell = row.insertCell(-1);
+                cell.innerHTML = arr[i][j];
+            }
+        }
+
+        let dvTable = document.getElementById("dvTable");
+        dvTable.innerHTML = "";
+        dvTable.appendChild(table);
+    }
+
+    function onhashchange() {
+        let boardName = String(location.hash).slice(1);
+        loadBoard(boardName);
+    }
+
+    function onload() {
+        location.hash = "#Korea University";
+    }
+
+    function loadBoard(boardName) {
+
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', '/guestbook.cgi?board=' + boardName);
+        xhr.send();
+
+        // Response handling
+        xhr.onload = function () {
+            if (xhr.status != 200) {
+                alert(`Error ${xhr.status}: ${xhr.statusText}`);
+            } else { // Create the table
+                let responseObj = xhr.response;
+                let arr = tsv_to_array(responseObj);
+                GenerateTable(arr);
+            }
+        };
+
+        // Error handling
+        xhr.onerror = function () {
+            alert("Couldn't load board");
+        };
+    }
+</script>
