@@ -62,6 +62,9 @@ struct http_request {
 };
 
 int parse_http_request(int client_fd, char *request, struct http_request *req);
+int response_bad_request(int client_fd);
+int response_not_found(int client_fd);
+int response_internal_server_error(int client_fd);
 int response_with_data(int client_fd, struct http_request *req);
 
 #endif

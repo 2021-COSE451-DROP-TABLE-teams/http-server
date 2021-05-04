@@ -16,9 +16,37 @@ char *const kCgiRequestMethodGet = "REQUEST_METHOD=GET";
 char *const kCgiRequestMethodPost = "REQUEST_METHOD=POST";
 
 char *const kOkReponse = "HTTP/1.1 200 OK\r\n";
+char *const kBadRequest = "HTTP/1.1 400 Bad Request\r\n";
+char *const kNotFound = "HTTP/1.1 404 Not Found\r\n";
+char *const kInternalServerError = "HTTP/1.1 500 Internal Server Error\r\n";
+
 char *const kServer = "Server: TEAM DROP TABLE\r\n";
 char *const kConnectionClose = "Connection: close\r\n";
 char *const kContentTypeHtml = "Content-Type: text/html\r\n";
+
+char *const kBadRequestHtml =
+    "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">"
+    "<html>"
+    "<head><title> 400 Bad Request</title></head><body><h1> Bad Request</h1>"
+    "<p> Your browser sent a request that this server could not "
+    "understand.<br/>"
+    "</p><hr></body></html> ";
+
+char *const kNotFoundHtml =
+    "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">"
+    "<html>"
+    "<head><title> 404 Not Found</title></head><body><h1> Not Found</h1>"
+    "<p> The requested URL was not found on this server.</p><hr></body>"
+    "</html>";
+
+char *const kInternalServerErrorHtml =
+    "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">"
+    "<html>"
+    "<head><title> 500 Internal Server Error</title></head><body>"
+    "<h1> Internal Server Error</h1>"
+    "<p> Ther server encountered an internal error or misconfiguration and was "
+    "unable to complete your request.</p><hr></body>"
+    "</html>";
 
 char *strcasestr(const char *s, const char *find) {
   char c, sc;
@@ -298,6 +326,113 @@ script_name_fail:
   return -1;
 }
 
+int response_bad_request(int client_fd) {
+  time_t rawtime;
+  struct tm *timeinfo;
+  int header_len;
+  char buffer[128];
+  char *res = (char *)malloc(DEFAULT_RES_LEN);
+  if (!res) {
+    fprintf(stderr, "Couldn't handle error");
+    exit(-1);
+  }
+
+  strcpy(res, kBadRequest);
+
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+  strftime(buffer, sizeof(buffer), "Date: %a, %d %b %G %T %Z\r\n", timeinfo);
+  strcat(res, buffer);
+
+  strcat(res, kServer);
+
+  sprintf(res + strlen(res), "Content-Length: %ld\r\n",
+          strlen(kBadRequestHtml));
+
+  strcat(res, kConnectionClose);
+
+  strcat(res, kContentTypeHtml);
+  strcat(res, CRLF);
+
+  header_len = strlen(res);
+  strcat(res, kBadRequestHtml);
+
+  write(client_fd, res, strlen(res));
+  free(res);
+  return 0;
+}
+
+int response_not_found(int client_fd) {
+  time_t rawtime;
+  struct tm *timeinfo;
+  int header_len;
+  char buffer[128];
+  char *res = (char *)malloc(DEFAULT_RES_LEN);
+  if (!res) {
+    fprintf(stderr, "Couldn't handle error");
+    exit(-1);
+  }
+
+  strcpy(res, kNotFound);
+
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+  strftime(buffer, sizeof(buffer), "Date: %a, %d %b %G %T %Z\r\n", timeinfo);
+  strcat(res, buffer);
+
+  strcat(res, kServer);
+
+  sprintf(res + strlen(res), "Content-Length: %ld\r\n", strlen(kNotFoundHtml));
+
+  strcat(res, kConnectionClose);
+
+  strcat(res, kContentTypeHtml);
+  strcat(res, CRLF);
+
+  header_len = strlen(res);
+  strcat(res, kNotFoundHtml);
+
+  write(client_fd, res, strlen(res));
+  free(res);
+  return 0;
+}
+
+int response_internal_server_error(int client_fd) {
+  time_t rawtime;
+  struct tm *timeinfo;
+  int header_len;
+  char buffer[128];
+  char *res = (char *)malloc(DEFAULT_RES_LEN);
+  if (!res) {
+    fprintf(stderr, "Couldn't handle error");
+    exit(-1);
+  }
+
+  strcpy(res, kInternalServerError);
+
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+  strftime(buffer, sizeof(buffer), "Date: %a, %d %b %G %T %Z\r\n", timeinfo);
+  strcat(res, buffer);
+
+  strcat(res, kServer);
+
+  sprintf(res + strlen(res), "Content-Length: %ld\r\n",
+          strlen(kInternalServerErrorHtml));
+
+  strcat(res, kConnectionClose);
+
+  strcat(res, kContentTypeHtml);
+  strcat(res, CRLF);
+
+  header_len = strlen(res);
+  strcat(res, kInternalServerErrorHtml);
+
+  write(client_fd, res, strlen(res));
+  free(res);
+  return 0;
+}
+
 int response_with_data(int client_fd, struct http_request *req) {
   int is_cgi = 0;
   char buffer[128];  // fixed size is safe because buffer is only filled with
@@ -320,20 +455,21 @@ int response_with_data(int client_fd, struct http_request *req) {
     if (is_cgi = strcmp(p, ".html"), is_cgi && strcmp(p, ".cgi")) return -1;
     strncat(uri, req->request_uri, sizeof(uri));
   } else {
-    return -1;
+    return response_bad_request(client_fd);
   }
 
-  if (access(uri, R_OK | (is_cgi ? X_OK : 0)) < 0) return -1;
+  if (access(uri, R_OK | (is_cgi ? X_OK : 0)) < 0)
+    return response_not_found(client_fd);
 
   res = (char *)malloc(DEFAULT_RES_LEN);
-  if (!res) return -1;
+  if (!res) return response_internal_server_error(client_fd);
 
   if (is_cgi) {
     int in_pipe[2];
     int out_pipe[2];
 
-    if (pipe(in_pipe) < 0) return -1;
-    if (pipe(out_pipe) < 0) return -1;
+    if (pipe(in_pipe) < 0) return response_internal_server_error(client_fd);
+    if (pipe(out_pipe) < 0) return response_internal_server_error(client_fd);
 
     strcpy(res, kOkReponse);
 
@@ -380,7 +516,7 @@ int response_with_data(int client_fd, struct http_request *req) {
 
     int content_length;
     char *cgi_out = read_cgi_output(out_pipe[0], &content_length);
-    if (!cgi_out) return -1;
+    if (!cgi_out) return response_internal_server_error(client_fd);
 
     sprintf(res + strlen(res), "Content-Length: %d\r\n", content_length);
 
@@ -432,6 +568,6 @@ int response_with_data(int client_fd, struct http_request *req) {
     close(fd);
   fd_fail:
     free(res);
-    return -1;
+    return response_internal_server_error(client_fd);
   }
 }
