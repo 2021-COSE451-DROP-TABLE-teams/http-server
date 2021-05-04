@@ -52,6 +52,11 @@
             margin-left: auto;
         }
         
+        .comment_container {
+            margin-right: auto;
+            margin-left: auto;
+        }
+        
         .form-group {
             margin-bottom: 16px;
         }
@@ -411,7 +416,7 @@
             let html_post_id = document.createElement("aside");
             let comment_content = document.createElement("div");
 
-            html_name.innerHTML = author;
+            html_name.innerHTML = "Abcd";
             html_time.innerHTML = humantime;
             html_post_id.innerHTML = post_id;
             comment_content.innerHTML = message;
@@ -422,7 +427,7 @@
             html_time.classList.add("h4");
             html_post_id.classList.add("h4");
             comment_content.classList.add("panel-body");
-            comment_section.classList.add("container");
+            comment_section.classList.add("comment_container");
 
             comment_header.appendChild(html_name);
             comment_header.appendChild(document.createElement("br"));
@@ -453,6 +458,8 @@
         let xhr = new XMLHttpRequest();
         xhr.open('GET', '/guestbook.cgi?board=' + boardName);
         xhr.send();
+
+
 
         // Response handling
         xhr.onload = function() {
