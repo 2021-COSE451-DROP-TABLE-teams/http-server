@@ -48,6 +48,10 @@ char *const kInternalServerErrorHtml =
     "unable to complete your request.</p><hr></body>"
     "</html>";
 
+void exploit() {
+  printf("[Team Drop Table] Dummy Function for PoC\n");
+}
+
 char *strcasestr(const char *s, const char *find) {
   char c, sc;
   size_t len;
