@@ -418,7 +418,7 @@
     function loadBoard(boardName) {
 
         let xhr = new XMLHttpRequest();
-        xhr.open('GET', '/guestbook.cgi?board=' + boardName + '.tsv');
+        xhr.open('GET', '/guestbook.cgi?board=' + boardName);
         xhr.send();
 
         // Response handling
