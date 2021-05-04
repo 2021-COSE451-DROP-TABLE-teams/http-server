@@ -82,8 +82,11 @@ int main(int argc, char **argv) {
   printf("\n[DEBUG] Received:\n%s\n---\n", request_buf);
 #endif
 
-  if (res = parse_http_request(client_fd, request_buf, &user_request), res < 0)
-    goto done;  // TODO: response with error
+  if (res = parse_http_request(client_fd, request_buf, &user_request),
+      res < 0) {
+    response_bad_request(client_fd);
+    goto done;
+  }
 
 #if DEBUG
   fprintf(stderr, "[DEBUG] request: %s\n", user_request.request);
@@ -104,8 +107,7 @@ int main(int argc, char **argv) {
   fprintf(stderr, "[DEBUG] body: %s\n", user_request.body);
 #endif
 
-  if (res = response_with_data(client_fd, &user_request), res < 0)
-    goto done;  // TODO: response with error
+  if (res = response_with_data(client_fd, &user_request), res < 0) goto done;
 
 done:
   free(user_request.request);
