@@ -1,4 +1,4 @@
-# TEAM DROP TABLE HTTP Server
+# TEAM DROP TABLE - HTTP Server
 
 This is our simple HTTP server implementation.
 
