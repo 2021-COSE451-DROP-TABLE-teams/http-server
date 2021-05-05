@@ -4,6 +4,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define DEBUG
+
 #define TRUE 1
 #define FALSE 0
 
@@ -135,10 +137,16 @@ int update_tsv() {
     p_message = strstr(buffer, "comment=");
     token = strtok(p_message, "=");
     message = strtok(NULL, "&");
+#ifdef DEBUG
+    fprintf(stderr, "[DEBUG] message: %s\n", message);
+#endif
   } else {
     p_id = strstr(buffer, "post-id=");
     token = strtok(p_id, "=");
     id = strtok(NULL, "&");
+#ifdef DEBUG
+    fprintf(stderr, "[DEBUG] post-id: %s\n", id);
+#endif
   }
 
   char* p_hash = strstr(buffer, "password=");
@@ -149,6 +157,11 @@ int update_tsv() {
   token = strtok(p_author, "=");
   char* author = strtok(NULL, "&");
   free(buffer);
+
+#ifdef DEBUG
+  fprintf(stderr, "[DEBUG] hash: %s\n", hash);
+  fprintf(stderr, "[DEBUG] author: %s\n", author);
+#endif
 
   if (do_create) {  // create operation
     FILE* fp = fopen(filename, "a+");
@@ -166,7 +179,7 @@ int update_tsv() {
     return 0;
   } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
-    char* bf[100];
+    char bf[100];
     int line = 0;
     char* line_ptr;
 
@@ -201,7 +214,7 @@ int update_tsv() {
 
 int get_next_id(char* filename) {
   FILE* p_file = fopen(filename, "r");
-  char* buffer[100];
+  char buffer[100];
   int next_id = -1;
 
   while (!feof(p_file)) {
