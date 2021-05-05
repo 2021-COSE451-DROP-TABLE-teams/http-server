@@ -13,4 +13,4 @@ core.o: core.h core.c
 	gcc -c core.c
 
 clean:
-	rm -rf ./*.o ./server
+	rm -rf ./*.o ./server ./guestbook.cgi
