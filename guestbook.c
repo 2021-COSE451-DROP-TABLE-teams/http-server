@@ -166,7 +166,7 @@ int update_tsv() {
     return 0;
   } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
-    char* bf[100];
+    char bf[100];
     int line = 0;
     char* line_ptr;
 
