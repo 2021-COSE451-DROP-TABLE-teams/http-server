@@ -159,8 +159,8 @@ int update_tsv() {
   free(buffer);
 
 #ifdef DEBUG
-    fprintf(stderr, "[DEBUG] hash: %s\n", hash);
-    fprintf(stderr, "[DEBUG] author: %s\n", author);
+  fprintf(stderr, "[DEBUG] hash: %s\n", hash);
+  fprintf(stderr, "[DEBUG] author: %s\n", author);
 #endif
 
   if (do_create) {  // create operation
