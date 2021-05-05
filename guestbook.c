@@ -201,7 +201,7 @@ int update_tsv() {
 
 int get_next_id(char* filename) {
   FILE* p_file = fopen(filename, "r");
-  char* buffer[100];
+  char buffer[100];
   int next_id = -1;
 
   while (!feof(p_file)) {
