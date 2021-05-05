@@ -78,12 +78,16 @@ int send_tsv() {
 int update_tsv() {
   printf("Content-type: application/json\r\n\r\n");
 
+#define error_response(msg)             \
+  {                                     \
+    fprintf(stderr, msg);               \
+    printf("{ \"result\": \"error\"}"); \
+  }
+
   // obtain board name from environment variable
   const char* query_string = getenv("QUERY_STRING");
-
   if (strcmp(query_string, "") == 0) {
-    fprintf(stderr, "Empty query string.\n");
-    printf("{ \"result\": \"error\"}");
+    error_response("Empty query string.\n");
     return 0;
   }
 
@@ -91,6 +95,11 @@ int update_tsv() {
   char* p_board = strstr(query_string, "board=");
   char* token = strtok(p_board, "=");
   char* board_name = strtok(NULL, "&");
+  char* filename = strcat(board_name, ".tsv");
+  if (access(filename, R_OK) < 0) {
+    error_response("board doesn't exist");
+    return 0;
+  }
 
   // check operation type
   char* p_op = strstr(query_string, "operation=");
@@ -103,8 +112,7 @@ int update_tsv() {
   } else if (strcmp(op, "delete") == 0) {
     do_create = FALSE;
   } else {
-    fprintf(stderr, "Unrecognised operation.");
-    printf("{ \"result\": \"error\"}");
+    error_response("Unrecognised operation.");
     return 0;
   }
 
@@ -112,8 +120,7 @@ int update_tsv() {
   int content_len = atoi(getenv("CONTENT_LENGTH"));
   char* buffer = (char*)malloc(content_len * 2);
   if (!buffer) {
-    fprintf(stderr, "Failed to allocate memory.");
-    printf("{ \"result\": \"error\"}");
+    error_response("Failed to allocate memory.");
     return 0;
   }
   read(0, buffer, content_len);
@@ -142,11 +149,7 @@ int update_tsv() {
   token = strtok(p_author, "=");
   char* author = strtok(NULL, "&");
 
-  // generate file name
-  char* filename = strcat(board_name, ".tsv");
-
-  // perform operation
-  if (do_create) {
+  if (do_create) {  // create operation
     FILE* fp = fopen(filename, "a+");
 
     // generate the rest of the message fields
@@ -162,7 +165,7 @@ int update_tsv() {
     fclose(fp);
     printf("{ \"result\": \"success\"}");
     return 0;
-  } else {
+  } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
     char* bf[100];
     int line = 0;
