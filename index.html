@@ -265,6 +265,7 @@
         }
         
         form {
+            /*display: none;*/
             border-radius: 5px;
             background-color: #f2f2f2;
             padding: 20px;
@@ -294,6 +295,7 @@
 
 
     <div class="container">
+
         <div class="options">
             <button type="button" class="btn" onclick="openSubmit()">Submit</button>
             <button type="button" class="btn" onclick="openDelete()">Delete</button>
@@ -417,7 +419,7 @@
             let comment_content = document.createElement("div");
 
             html_name.innerHTML = author;
-            html_time.innerHTML = humantime;
+            html_time.innerHTML = unix_time;
             html_post_id.innerHTML = post_id;
             comment_content.innerHTML = message;
 
@@ -451,14 +453,19 @@
 
     function onload() {
         location.hash = "#Korea University";
+        closeSubmit();
+        closeDelete();
+        let boardName = String(location.hash).slice(1);
+        loadBoard(boardName);
+        document.getElementById("current_board").innerHTML = boardName.replace("%20", " ");
     }
+
 
     function loadBoard(boardName) {
 
         let xhr = new XMLHttpRequest();
         xhr.open('GET', '/guestbook.cgi?board=' + boardName);
         xhr.send();
-
 
 
         // Response handling
