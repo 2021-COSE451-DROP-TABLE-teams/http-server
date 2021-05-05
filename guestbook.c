@@ -4,6 +4,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#define TRUE 1
+#define FALSE 0
+
 int send_tsv();
 int update_tsv();
 int get_next_id();
@@ -24,9 +27,11 @@ int main() {
 }
 
 int send_tsv() {
+  // begin output
+  printf("Content-type: text/tab-separated-values\r\n\r\n");
+
   // obtain board name from environment variable
   const char* query_string = getenv("QUERY_STRING");
-
   if (strcmp(query_string, "") == 0) {
     fprintf(stderr, "Empty query string.\n");
     return 0;
@@ -36,9 +41,6 @@ int send_tsv() {
   char* pboard = strstr(query_string, "board=");
   char* token = strtok(pboard, "=");
   char* board_name = strtok(NULL, "&");
-
-  // begin output
-  printf("Content-type: text/tab-separated-values\r\n\r\n");
 
   // generate file name and open TSV file
   char* filename = strcat(board_name, ".tsv");
@@ -50,6 +52,7 @@ int send_tsv() {
     fp = fopen(filename, "w");
     fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", 0, "hash", 0, 0, "username",
             "message");
+    fclose(fp);
     return 0;
   }
 
@@ -73,11 +76,14 @@ int send_tsv() {
 }
 
 int update_tsv() {
+  printf("Content-type: application/json\r\n\r\n");
+
   // obtain board name from environment variable
   const char* query_string = getenv("QUERY_STRING");
 
   if (strcmp(query_string, "") == 0) {
     fprintf(stderr, "Empty query string.\n");
+    printf("{ \"result\": \"error\"}");
     return 0;
   }
 
@@ -90,19 +96,26 @@ int update_tsv() {
   char* p_op = strstr(query_string, "operation=");
   token = strtok(p_op, "=");
   char* op = strtok(NULL, "&");
-  int mode;
+  int do_create;
+
   if (strcmp(op, "create") == 0) {
-    mode = 1;
+    do_create = TRUE;
   } else if (strcmp(op, "delete") == 0) {
-    mode = 0;
+    do_create = FALSE;
   } else {
     fprintf(stderr, "Unrecognised operation.");
+    printf("{ \"result\": \"error\"}");
     return 0;
   }
 
-  // extract from stdin
+  // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
   char* buffer = (char*)malloc(content_len * 2);
+  if (!buffer) {
+    fprintf(stderr, "Failed to allocate memory.");
+    printf("{ \"result\": \"error\"}");
+    return 0;
+  }
   read(0, buffer, content_len);
 
   // extract relevant fields
@@ -111,7 +124,7 @@ int update_tsv() {
   char* p_id = NULL;
   char* id = NULL;
 
-  if (mode == 1) {
+  if (do_create) {
     p_message = strstr(buffer, "comment=");
     token = strtok(p_message, "=");
     message = strtok(NULL, "&");
@@ -133,7 +146,7 @@ int update_tsv() {
   char* filename = strcat(board_name, ".tsv");
 
   // perform operation
-  if (mode == 1) {
+  if (do_create) {
     FILE* fp = fopen(filename, "a+");
 
     // generate the rest of the message fields
@@ -147,6 +160,7 @@ int update_tsv() {
 
     free(buffer);
     fclose(fp);
+    printf("{ \"result\": \"success\"}");
     return 0;
   } else {
     FILE* fp = fopen(filename, "r+");
@@ -169,7 +183,7 @@ int update_tsv() {
         char* message = strtok(NULL, "\t");
 
         // TODO: find the right offset
-        fseek(fp, -sizeof(message) - sizeof(username) - sizeof(visible) + 1,
+        fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 3),
               SEEK_CUR);
         fputc('0', fp);
         break;
@@ -179,6 +193,7 @@ int update_tsv() {
 
     free(buffer);
     fclose(fp);
+    printf("{ \"result\": \"success\"}");
     return 0;
   }
 }
@@ -195,5 +210,6 @@ int get_next_id(char* filename) {
     }
   }
 
+  fclose(p_file);
   return next_id;
 }
