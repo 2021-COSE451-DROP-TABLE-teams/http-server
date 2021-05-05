@@ -118,7 +118,7 @@ int update_tsv() {
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
-  char* buffer = (char*)malloc(content_len * 2);
+  char* buffer = (char*)calloc(content_len + 1, sizeof(char));
   if (!buffer) {
     error_response("Failed to allocate memory.");
     return 0;
@@ -148,6 +148,7 @@ int update_tsv() {
   char* p_author = strstr(buffer, "name=");
   token = strtok(p_author, "=");
   char* author = strtok(NULL, "&");
+  free(buffer);
 
   if (do_create) {  // create operation
     FILE* fp = fopen(filename, "a+");
@@ -158,12 +159,10 @@ int update_tsv() {
     int visible = 1;
 
     // append message to file
-    int readlen = fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, hash,
-                          post_id, visible, author, message);
-
-    free(buffer);
-    fclose(fp);
+    fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, hash, post_id, visible,
+            author, message);
     printf("{ \"result\": \"success\"}");
+    fclose(fp);
     return 0;
   } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
@@ -194,9 +193,8 @@ int update_tsv() {
       line++;
     }
 
-    free(buffer);
-    fclose(fp);
     printf("{ \"result\": \"success\"}");
+    fclose(fp);
     return 0;
   }
 }
