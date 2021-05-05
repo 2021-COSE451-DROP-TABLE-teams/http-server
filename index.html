@@ -374,7 +374,7 @@
         arr.push(columns);
 
         let lines = tsv.split('\n');
-        for (let index = 0; index < lines.length; index++) {
+        for (let index = 0; index < (lines.length) - 1; index++) {
             let line = lines[index].split('\t');
             arr.push(line);
         }
@@ -506,8 +506,6 @@
         let xhr = new XMLHttpRequest();
         xhr.open('GET', '/guestbook.cgi?board=' + boardName);
         xhr.send();
-
-
 
 
         // Response handling
