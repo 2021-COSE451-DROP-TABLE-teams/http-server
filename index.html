@@ -451,6 +451,46 @@
 
     function onload() {
         location.hash = "#Korea University";
+        
+        const delete_form = document.getElementById('delete');
+        // listen for submit even
+        delete_form.addEventListener('submit', (event) => {
+            // disable default action
+            event.preventDefault();
+            let boardName = String(location.hash).slice(1);
+            post_form(boardName, delete_form, 'delete')
+        });
+
+        const submit_form = document.getElementById('submit');
+        // listen for submit even
+        submit_form.addEventListener('submit', (event) => {
+            // disable default action
+            event.preventDefault();
+            let boardName = String(location.hash).slice(1);
+            post_form(boardName, submit_form, 'create')
+        });
+    }
+    
+    function post_form(boardname, formElement, operation) {
+        let xhr = new XMLHttpRequest();
+        let link = 'guestbook.cgi?board=' + boardname + '&operation=' + operation;
+        xhr.open("POST", link);
+        xhr.send(new FormData(formElement));
+
+        // Response handling
+        xhr.onload = function () {
+            if (xhr.status != 200) {
+                alert(`Something went wrong \n Error ${xhr.status}: ${xhr.statusText}`);
+            } else {
+                alert(`Success`);
+            }
+            onhashchange();
+        };
+
+        // Error handling
+        xhr.onerror = function () {
+            alert("Error while attempting to submit");
+        };
     }
 
     function loadBoard(boardName) {
