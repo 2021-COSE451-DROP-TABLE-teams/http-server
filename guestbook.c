@@ -58,12 +58,16 @@ int send_tsv() {
     return 0;
   }
 
-  char hash[256];
+  char hash[52];
   unsigned int unix_time;
   int post_id;
   int visible;
-  char author[100];
-  char message[1000];
+  char author[52];
+  char* message = (char*)malloc(1000);
+  if (!message) {
+    fprintf(stderr, "failed to allocate message.\n");
+    return 0;
+  }
 
   while (fscanf(fp, "%u\t%s\t%d\t%d\t%s\t", &unix_time, hash, &post_id,
                 &visible, author) == 5) {
@@ -73,6 +77,7 @@ int send_tsv() {
     printf("%u\t%d\t%s\t%s", unix_time, post_id, author, message);
   }
 
+  free(message);
   fclose(fp);
   return 0;
 }
@@ -199,6 +204,10 @@ int update_tsv() {
     error_response("bad password parameter");
     return 0;
   }
+  if (strlen(password) > 50) {
+    error_response("too long password");
+    return 0;
+  }
 #ifdef DEBUG
   fprintf(stderr, "[DEBUG] password: %s\n", password);
 #endif
@@ -210,6 +219,10 @@ int update_tsv() {
   }
   if (filter(author) < 0) {
     error_response("bad author parameter");
+    return 0;
+  }
+  if (strlen(author) > 150) {
+    error_response("too long author");
     return 0;
   }
 #ifdef DEBUG
@@ -224,6 +237,10 @@ int update_tsv() {
     }
     if (filter(message) < 0) {
       error_response("bad message parameter");
+      return 0;
+    }
+    if (strlen(message) > 500) {
+      error_response("too long message");
       return 0;
     }
 #ifdef DEBUG
@@ -294,11 +311,11 @@ int update_tsv() {
 
 int get_next_id(char* filename) {
   FILE* p_file = fopen(filename, "r");
-  char buffer[100];
+  char buffer[1024];
   int next_id = -1;
 
   while (!feof(p_file)) {
-    fgets(buffer, 100, p_file);
+    fgets(buffer, 1024, p_file);
     if (strstr(buffer, "\n")) {
       next_id++;
     }

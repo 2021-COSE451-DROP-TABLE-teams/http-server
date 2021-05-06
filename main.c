@@ -11,7 +11,7 @@
 #include "core.h"
 
 #define MAX_LISTEN_QUEUE 5
-#define REQ_BUF_SIZE 1024
+#define REQ_BUF_SIZE 2048
 
 struct server_config server_configuration;
 
