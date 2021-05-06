@@ -112,6 +112,12 @@ char* get_param(char** params, char* key) {
   return NULL;
 }
 
+int filter(char* str) {
+  if (strchr(str, '\t')) return -1;
+  if (strchr(str, '\n')) return -1;
+  return 0;
+}
+
 int update_tsv() {
   printf("Content-type: application/json\r\n\r\n");
 
@@ -189,6 +195,10 @@ int update_tsv() {
     error_response("no password parameter");
     return 0;
   }
+  if (filter(password) < 0) {
+    error_response("bad password parameter");
+    return 0;
+  }
 #ifdef DEBUG
   fprintf(stderr, "[DEBUG] password: %s\n", password);
 #endif
@@ -198,7 +208,10 @@ int update_tsv() {
     error_response("no author parameter");
     return 0;
   }
-
+  if (filter(author) < 0) {
+    error_response("bad author parameter");
+    return 0;
+  }
 #ifdef DEBUG
   fprintf(stderr, "[DEBUG] author: %s\n", author);
 #endif
@@ -209,6 +222,10 @@ int update_tsv() {
       error_response("no message parameter");
       return 0;
     }
+    if (filter(message) < 0) {
+      error_response("bad message parameter");
+      return 0;
+    }
 #ifdef DEBUG
     fprintf(stderr, "[DEBUG] message: %s\n", message);
 #endif
@@ -216,6 +233,10 @@ int update_tsv() {
     id = get_param(parsed_parameters, "post-id");
     if (!id) {
       error_response("no message parameter");
+      return 0;
+    }
+    if (filter(id) < 0) {
+      error_response("bad id parameter");
       return 0;
     }
 #ifdef DEBUG

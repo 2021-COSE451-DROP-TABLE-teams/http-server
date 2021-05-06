@@ -448,7 +448,6 @@ int response_with_data(int client_fd, struct http_request *req) {
   time_t rawtime;
   struct tm *timeinfo;
 
-  // vulnerable point: directory traversal
   strncpy(uri, server_configuration.root, sizeof(uri));
   if (!strcmp(req->request_uri, "/")) {
     strncat(uri, "/index.html", sizeof(uri));
