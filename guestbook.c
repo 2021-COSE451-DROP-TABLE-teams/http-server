@@ -137,7 +137,13 @@ int update_tsv() {
   }
 
   // check if board exists
-  char* filename = strcat(strdup(board_name), ".tsv");
+  char* filename = malloc(strlen(board_name) + strlen(".tsv") + 1);
+  if (!filename) {
+    error_response("memory allocation failed.");
+    return 0;
+  }
+  strcpy(filename, board_name);
+  strcat(filename, ".tsv");
   if (access(filename, R_OK) < 0) {
     error_response("board doesn't exist");
     return 0;
