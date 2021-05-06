@@ -177,6 +177,8 @@
         }
         
         .panel {
+            word-wrap: break-word;
+            overflow: hidden;
             margin-bottom: 20px;
             background-color: #FFFFFF;
             border: 1px solid transparent;
@@ -517,6 +519,7 @@
         let xhr = new XMLHttpRequest();
         xhr.open('GET', '/guestbook.cgi?board=' + boardName);
         xhr.send();
+
 
 
         // Response handling
