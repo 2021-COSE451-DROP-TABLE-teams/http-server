@@ -77,6 +77,41 @@ int send_tsv() {
   return 0;
 }
 
+#define MAX_NUM_PARAMS 8
+
+char** parse_parameters(const char* params) {
+  int num_params = 0;
+  char** parsed = (char**)malloc(sizeof(char*) * (MAX_NUM_PARAMS + 1));
+  if (!parsed) return NULL;
+
+  char* p = strdup(params);
+  if (!p) {
+    free(parsed);
+    return NULL;
+  }
+
+  // split into token with "&";
+  parsed[num_params++] = strtok(p, "&");
+  while (p = strtok(NULL, "&"), num_params < MAX_NUM_PARAMS && p)
+    parsed[num_params++] = p;
+
+  parsed[num_params] = NULL;  // end of parsed parameters
+  return parsed;
+}
+
+char* get_param(char** params, char* key) {
+  for (int i = 0; params[i]; ++i) {
+    if (!strstr(params[i], "=")) continue;
+    if (strncmp(params[i], key, strlen(key))) continue;
+
+    char* name = strtok(params[i], "=");
+    char* value = strtok(NULL, "=");
+    return value;
+  }
+
+  return NULL;
+}
+
 int update_tsv() {
   printf("Content-type: application/json\r\n\r\n");
 
@@ -94,21 +129,28 @@ int update_tsv() {
   }
 
   // extract board name from query string
-  char* p_board = strstr(query_string, "board=");
-  char* token = strtok(p_board, "=");
-  char* board_name = strtok(NULL, "&");
-  char* filename = strcat(board_name, ".tsv");
+  char** parsed_query_string = parse_parameters(query_string);
+  char* board_name = get_param(parsed_query_string, "board");
+  if (!board_name) {
+    error_response("no board parameter");
+    return 0;
+  }
+
+  // check if board exists
+  char* filename = strcat(strdup(board_name), ".tsv");
   if (access(filename, R_OK) < 0) {
     error_response("board doesn't exist");
     return 0;
   }
 
   // check operation type
-  char* p_op = strstr(query_string, "operation=");
-  token = strtok(p_op, "=");
-  char* op = strtok(NULL, "&");
-  int do_create;
+  char* op = get_param(parsed_query_string, "operation");
+  if (!op) {
+    error_response("no operation parameter");
+    return 0;
+  }
 
+  int do_create;
   if (strcmp(op, "create") == 0) {
     do_create = TRUE;
   } else if (strcmp(op, "delete") == 0) {
@@ -117,6 +159,10 @@ int update_tsv() {
     error_response("Unrecognised operation.");
     return 0;
   }
+
+  // free query_string memory
+  free(*parsed_query_string);
+  free(parsed_query_string);
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
@@ -128,52 +174,61 @@ int update_tsv() {
   read(0, buffer, content_len);
 
   // extract relevant fields
-  char* p_message = NULL;
-  char* message = NULL;
-  char* p_id = NULL;
-  char* id = NULL;
+  char** parsed_parameters = parse_parameters(buffer);
+
+  char* message;
+  char* id;
+  char* password = get_param(parsed_parameters, "password");
+  if (!password) {
+    error_response("no password parameter");
+    return 0;
+  }
+#ifdef DEBUG
+  fprintf(stderr, "[DEBUG] password: %s\n", password);
+#endif
+
+  char* author = get_param(parsed_parameters, "name");
+  if (!author) {
+    error_response("no author parameter");
+    return 0;
+  }
+
+#ifdef DEBUG
+  fprintf(stderr, "[DEBUG] author: %s\n", author);
+#endif
 
   if (do_create) {
-    p_message = strstr(buffer, "comment=");
-    token = strtok(p_message, "=");
-    message = strtok(NULL, "&");
+    message = get_param(parsed_parameters, "comment");
+    if (!message) {
+      error_response("no message parameter");
+      return 0;
+    }
 #ifdef DEBUG
     fprintf(stderr, "[DEBUG] message: %s\n", message);
 #endif
   } else {
-    p_id = strstr(buffer, "post-id=");
-    token = strtok(p_id, "=");
-    id = strtok(NULL, "&");
+    id = get_param(parsed_parameters, "post-id");
+    if (!id) {
+      error_response("no message parameter");
+      return 0;
+    }
 #ifdef DEBUG
     fprintf(stderr, "[DEBUG] post-id: %s\n", id);
 #endif
   }
 
-  char* p_hash = strstr(buffer, "password=");
-  token = strtok(p_hash, "=");
-  char* hash = strtok(NULL, "&");
-
-  char* p_author = strstr(buffer, "name=");
-  token = strtok(p_author, "=");
-  char* author = strtok(NULL, "&");
   free(buffer);
 
-#ifdef DEBUG
-  fprintf(stderr, "[DEBUG] hash: %s\n", hash);
-  fprintf(stderr, "[DEBUG] author: %s\n", author);
-#endif
-
   if (do_create) {  // create operation
-    FILE* fp = fopen(filename, "a+");
-
     // generate the rest of the message fields
     unsigned int unix_time = (unsigned)time(NULL);
-    int post_id = get_next_id(board_name);
+    int post_id = get_next_id(filename);
     int visible = 1;
 
     // append message to file
-    fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, hash, post_id, visible,
-            author, message);
+    FILE* fp = fopen(filename, "a+");
+    fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, password, post_id,
+            visible, author, message);  // TODO: hash
     printf("{ \"result\": \"success\"}");
     fclose(fp);
     return 0;
@@ -185,7 +240,7 @@ int update_tsv() {
 
     while (!feof(fp)) {
       fgets(bf, sizeof(bf), fp);
-      line_ptr = strstr(bf, hash);
+      line_ptr = strstr(bf, password);  // TODO: hash
 
       if (line_ptr != NULL) {
         char* hash = strtok(line_ptr, "\t");
