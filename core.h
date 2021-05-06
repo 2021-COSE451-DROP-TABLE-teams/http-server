@@ -20,7 +20,7 @@
 
 #define CRLF "\r\n"
 
-#define MAX_URI_LEN 1024
+#define MAX_URI_LEN 128
 #define DEFAULT_RES_LEN 1024
 
 extern const char *kHttpMethods[];
