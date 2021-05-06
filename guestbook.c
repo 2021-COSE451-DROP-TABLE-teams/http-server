@@ -193,7 +193,7 @@ int update_tsv() {
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
-  char buffer[1024];
+  char buffer[1024] = {0, };
   read(0, buffer, content_len);
 
   // extract relevant fields
