@@ -94,7 +94,12 @@ int update_tsv() {
   }
 
   // extract board name from query string
-  char* p_board = strstr(query_string, "board=");
+  
+  //Directly doing char* token = strtok(p_board, "="); breaks query string
+  char* p_board_old = strstr(query_string, "board=");
+  char p_board[100];
+  strcpy(p_board, p_board_old); //TODO This is a (probabably bad) quickfix that has to be improved before submission
+  
   char* token = strtok(p_board, "=");
   char* board_name = strtok(NULL, "&");
   char* filename = strcat(board_name, ".tsv");
