@@ -499,7 +499,7 @@
         } else {
             data += `name=${formElement.name.value}` + '&'
             data += `password=${formElement.password.value}` + '&'
-            data += `post-id=${formElement.comment.value}`;
+            data += `post-id=${formElement['post-id'].value}`;
         }
         xhr.send(data);
 

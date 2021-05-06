@@ -230,6 +230,8 @@ int update_tsv() {
     fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, password, post_id,
             visible, author, message);  // TODO: hash
     printf("{ \"result\": \"success\"}");
+    free(*parsed_parameters);
+    free(parsed_parameters);
     fclose(fp);
     return 0;
   } else {  // delete operation
@@ -253,7 +255,7 @@ int update_tsv() {
         char* message = strtok(NULL, "\t");
 
         // TODO: find the right offset
-        fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 3),
+        fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 2),
               SEEK_CUR);
         fputc('0', fp);
         break;
@@ -262,6 +264,8 @@ int update_tsv() {
     }
 
     printf("{ \"result\": \"success\"}");
+    free(*parsed_parameters);
+    free(parsed_parameters);
     fclose(fp);
     return 0;
   }
