@@ -41,7 +41,7 @@ int send_tsv() {
 
   // extract board name from query string
   char* pboard = strstr(query_string, "board=");
-  if (!pbard) {
+  if (!pboard) {
     fprintf(stderr, "no board parameter");
     return 0;
   }
@@ -191,11 +191,7 @@ int update_tsv() {
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
-  char* buffer = (char*)calloc(content_len + 1, sizeof(char));
-  if (!buffer) {
-    error_response("Failed to allocate memory.");
-    return 0;
-  }
+  char buffer[1024];
   read(0, buffer, content_len);
 
   // extract relevant fields
@@ -268,8 +264,6 @@ int update_tsv() {
     fprintf(stderr, "[DEBUG] post-id: %s\n", id);
 #endif
   }
-
-  free(buffer);
 
   if (do_create) {  // create operation
     // generate the rest of the message fields
