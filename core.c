@@ -48,9 +48,7 @@ char *const kInternalServerErrorHtml =
     "unable to complete your request.</p><hr></body>"
     "</html>";
 
-void exploit() {
-  printf("[Team Drop Table] Dummy Function for PoC\n");
-}
+void exploit() { printf("[Team Drop Table] Dummy Function for PoC\n"); }
 
 char *strcasestr(const char *s, const char *find) {
   char c, sc;
@@ -441,10 +439,10 @@ int response_with_data(int client_fd, struct http_request *req) {
   int is_cgi = 0;
   char buffer[128];  // fixed size is safe because buffer is only filled with
                      // server-side data.
-  char uri[MAX_URI_LEN];  // MAYBE FIXME: fixed size
-                          // but already safe now,
-                          // current all writes to uri use strncpy() and
-                          // strncat().
+  char uri[128];     // MAYBE FIXME: fixed size
+                     // but already safe now,
+                     // current all writes to uri use strncpy() and
+                     // strncat().
   char *res;
   char *p;
   time_t rawtime;
