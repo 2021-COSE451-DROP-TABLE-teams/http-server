@@ -41,8 +41,16 @@ int send_tsv() {
 
   // extract board name from query string
   char* pboard = strstr(query_string, "board=");
+  if (!pbard) {
+    fprintf(stderr, "no board parameter");
+    return 0;
+  }
   char* token = strtok(pboard, "=");
   char* board_name = strtok(NULL, "&");
+  if (strchr(board_name, '/') || strchr(board_name, '.')) {
+    fprintf(stderr, "bad board name");
+    return 0;
+  }
 
   // generate file name and open TSV file
   char* filename = strcat(board_name, ".tsv");
