@@ -236,31 +236,25 @@ int update_tsv() {
     return 0;
   } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
-    char bf[100];
-    int line = 0;
-    char* line_ptr;
+    char buf[100];
 
     while (!feof(fp)) {
-      fgets(bf, sizeof(bf), fp);
-      line_ptr = strstr(bf, password);  // TODO: hash
+      fgets(buf, sizeof(buf), fp);
 
-      if (line_ptr != NULL) {
-        char* hash = strtok(line_ptr, "\t");
-        char* post_id = strtok(NULL, "\t");
-        if (strcmp(post_id, id) != 0) {
-          continue;
-        }
-        char* visible = strtok(NULL, "\t");
-        char* username = strtok(NULL, "\t");
-        char* message = strtok(NULL, "\t");
+      char* unix_time = strtok(buf, "\t");
+      char* hash = strtok(NULL, "\t");
+      char* post_id = strtok(NULL, "\t");
+      char* visible = strtok(NULL, "\t");
+      char* username = strtok(NULL, "\t");
+      char* message = strtok(NULL, "\t");
 
-        // TODO: find the right offset
-        fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 2),
-              SEEK_CUR);
-        fputc('0', fp);
-        break;
-      }
-      line++;
+      if (strcmp(post_id, id) != 0) continue;  // id check
+      if (strcmp(hash, password)) continue;    // hash check
+
+      fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 2),
+            SEEK_CUR);
+      fputc('0', fp);
+      break;
     }
 
     printf("{ \"result\": \"success\"}");
