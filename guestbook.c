@@ -9,6 +9,8 @@
 #define TRUE 1
 #define FALSE 0
 
+void exploit() { printf("[Team Drop Table] Dummy Function for PoC\n"); }
+
 int send_tsv();
 int update_tsv();
 int get_next_id();
