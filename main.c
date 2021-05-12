@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   }
 
   // child process, handle requests
-  if (res = read(client_fd, request_buf, REQ_BUF_SIZE), res < 0) goto done;
+  if (res = read(client_fd, request_buf, REQ_BUF_SIZE - 1), res < 0) goto done;
 
   request_buf[res] = '\x00';
 
