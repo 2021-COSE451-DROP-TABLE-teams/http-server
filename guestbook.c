@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -14,6 +16,13 @@ void exploit() { printf("[Team Drop Table] Dummy Function for PoC\n"); }
 int send_tsv();
 int update_tsv();
 int get_next_id();
+
+int is_symlink(char* filename) {
+  struct stat p_statbuf;
+  // if error, just abort
+  if (lstat(filename, &p_statbuf) < 0) return 1;
+  return S_ISLNK(p_statbuf.st_mode) == 1;
+};
 
 int main() {
   // determine request type
@@ -65,6 +74,9 @@ int send_tsv() {
     fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", 0, "hash", 0, 0, "username",
             "message");
     fclose(fp);
+    return 0;
+  } else if (is_symlink(filename)) {
+    fprintf(stderr, "invalid file");
     return 0;
   }
 
@@ -170,6 +182,11 @@ int update_tsv() {
     return 0;
   }
 
+  if (is_symlink(filename)) {
+    error_response("invalid file");
+    return 0;
+  }
+
   // check operation type
   char* op = get_param(parsed_query_string, "operation");
   if (!op) {
@@ -193,7 +210,9 @@ int update_tsv() {
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
-  char buffer[1024] = {0, };
+  char buffer[1024] = {
+      0,
+  };
   read(0, buffer, content_len);
 
   // extract relevant fields
