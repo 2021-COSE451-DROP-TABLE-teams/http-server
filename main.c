@@ -42,7 +42,9 @@ int main(int argc, char **argv) {
   server_configuration.fd = server_fd = socket(AF_INET, SOCK_STREAM, 0);
   server_configuration.root = argv[1];
   if (server_fd < 0) handle_error("socket() failed.\n");
-  if (root_dir = opendir(argv[1]), !root_dir)
+  if(strlen(server_configuration.root) > 100)
+    handle_error("too long path for root directory");
+  if (root_dir = opendir(server_configuration.root), !root_dir)
     handle_error("root directory does not exist.\n");
 
   closedir(root_dir);
