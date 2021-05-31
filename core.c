@@ -439,22 +439,24 @@ int response_with_data(int client_fd, struct http_request *req) {
   int is_cgi = 0;
   char buffer[128];  // fixed size is safe because buffer is only filled with
                      // server-side data.
-  char uri[MAX_URI_LEN];  // MAYBE FIXME: fixed size
-                          // but already safe now,
-                          // current all writes to uri use strncpy() and
-                          // strncat().
+  char uri[MAX_URI_LEN] = {
+      0,
+  };  // MAYBE FIXME: fixed size
+      // but already safe now,
+      // current all writes to uri use strncpy() and
+      // strncat().
   char *res;
   char *p;
   time_t rawtime;
   struct tm *timeinfo;
 
-  strncpy(uri, server_configuration.root, sizeof(uri));
+  strncpy(uri, server_configuration.root, sizeof(uri) - 1);
   if (!strcmp(req->request_uri, "/")) {
-    strncat(uri, "/index.html", sizeof(uri));
+    strncat(uri, "/index.html", sizeof(uri) - 1);
   } else if (p = strrchr(req->request_uri, '.'), p) {
     // only supports html and cgi
     if (is_cgi = strcmp(p, ".html"), is_cgi && strcmp(p, ".cgi")) return -1;
-    strcat(uri, req->request_uri);
+    strncat(uri, req->request_uri, sizeof(uri) - 1);
   } else {
     return response_bad_request(client_fd);
   }
