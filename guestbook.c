@@ -210,10 +210,18 @@ int update_tsv() {
 
   // extract parameters from stdin
   int content_len = atoi(getenv("CONTENT_LENGTH"));
-  char buffer[1024] = {
-      0,
-  };
-  read(0, buffer, content_len);
+  char* buffer = (char*)malloc(content_len + 1);
+  if (!buffer) {
+    error_response("memory allocation failed.");
+    return 0;
+  }
+
+  int len = read(0, buffer, content_len);
+  if (len < 0) {
+    error_response("failed to read post data.");
+    return 0;
+  }
+  buffer[len] = '\x00';
 
   // extract relevant fields
   char** parsed_parameters = parse_parameters(buffer);
