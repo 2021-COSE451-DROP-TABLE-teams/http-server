@@ -84,7 +84,7 @@ int send_tsv() {
   unsigned int unix_time;
   int post_id;
   int visible;
-  char author[52];
+  char author[200];
   char* message = (char*)malloc(1000);
   if (!message) {
     fprintf(stderr, "failed to allocate message.\n");
