@@ -453,7 +453,7 @@ int response_with_data(int client_fd, struct http_request *req) {
     strncat(uri, "/index.html", sizeof(uri));
   } else if (p = strrchr(req->request_uri, '.'), p) {
     // only supports html and cgi
-    is_cgi = !strcmp(p, ".cgi");
+    if (is_cgi = strcmp(p, ".html"), is_cgi && strcmp(p, ".cgi")) return -1;
     strcat(uri, req->request_uri);
   } else {
     return response_bad_request(client_fd);
