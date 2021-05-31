@@ -6,6 +6,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "sha256.h"
+
 #define DEBUG
 
 #define TRUE 1
@@ -80,7 +82,9 @@ int send_tsv() {
     return 0;
   }
 
-  char hash[52];
+  char hash[SHA256_BLOCK_SIZE * 2 + 1] = {
+      0,
+  };
   unsigned int unix_time;
   int post_id;
   int visible;
@@ -237,7 +241,7 @@ int update_tsv() {
     error_response("bad password parameter");
     return 0;
   }
-  if (strlen(password) > 50) {
+  if (strlen(password) > 50 || strlen(password) == 0) {
     error_response("too long password");
     return 0;
   }
@@ -299,11 +303,27 @@ int update_tsv() {
     unsigned int unix_time = (unsigned)time(NULL);
     int post_id = get_next_id(filename);
     int visible = 1;
+    SHA256_CTX ctx;
+    char hash[SHA256_BLOCK_SIZE] = {
+        0,
+    };
+    char hash_digest[SHA256_BLOCK_SIZE * 2 + 1] = {
+        0,
+    };
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, password, strlen(password));
+    sha256_final(&ctx, hash);
+    for (int i = 0; i < SHA256_BLOCK_SIZE; ++i)
+      sprintf(hash_digest + 2 * i, "%02x", hash[i] & 0xff);
+#ifdef DEBUG
+    fprintf(stderr, "[DEBUG] hash: %s\n", hash_digest);
+#endif
 
     // append message to file
     FILE* fp = fopen(filename, "a+");
-    fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, password, post_id,
-            visible, author, message);  // TODO: hash
+    fprintf(fp, "%u\t%s\t%d\t%d\t%s\t%s\n", unix_time, hash_digest, post_id,
+            visible, author, message);
     printf("{ \"result\": \"success\"}");
     free(*parsed_parameters);
     free(parsed_parameters);
@@ -311,20 +331,36 @@ int update_tsv() {
     return 0;
   } else {  // delete operation
     FILE* fp = fopen(filename, "r+");
-    char buf[100];
+    char buf[1024];
+    SHA256_CTX ctx;
+    char hash[SHA256_BLOCK_SIZE] = {
+        0,
+    };
+    char hash_digest[SHA256_BLOCK_SIZE * 2 + 1] = {
+        0,
+    };
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, password, strlen(password));
+    sha256_final(&ctx, hash);
+    for (int i = 0; i < SHA256_BLOCK_SIZE; ++i)
+      sprintf(hash_digest + 2 * i, "%02x", hash[i] & 0xff);
+#ifdef DEBUG
+    fprintf(stderr, "[DEBUG] hash: %s\n", hash_digest);
+#endif
 
     while (!feof(fp)) {
       fgets(buf, sizeof(buf), fp);
 
       char* unix_time = strtok(buf, "\t");
-      char* hash = strtok(NULL, "\t");
+      char* stored_hash = strtok(NULL, "\t");
       char* post_id = strtok(NULL, "\t");
       char* visible = strtok(NULL, "\t");
       char* username = strtok(NULL, "\t");
       char* message = strtok(NULL, "\t");
 
-      if (strcmp(post_id, id) != 0) continue;  // id check
-      if (strcmp(hash, password)) continue;    // hash check
+      if (strcmp(post_id, id) != 0) continue;   // id check
+      if (strcmp(stored_hash, hash_digest)) continue;  // hash check
 
       fseek(fp, -(strlen(message) + strlen(username) + strlen(visible) + 2),
             SEEK_CUR);
